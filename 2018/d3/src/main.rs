@@ -2,7 +2,9 @@ use std::{collections::HashSet, fs::read_to_string};
 
 // TODO: Create stryct for a Cell in the matrix
 // TODO: Impl the new() and add_id() for struct
-// TTODO: Split_once() and unwrap_or_else()
+// TODO: Split_once()
+// TODO: Proper error handling with split once and parse
+// TODO: Change direct access via index values, use tuples and destructuring
 
 fn main() {
     // TODO: Spread the logic into two parts and create matrix in here
@@ -58,6 +60,3 @@ fn part_1(input: &str) -> i32 {
     println!("{:?}", result);
     count
 }
-
-
-

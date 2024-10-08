@@ -1,19 +1,4 @@
-// Caveats: Guard shift can begin at 58. Falls asleep is always followed by wakes up
-//          Entries are not in chronological order -> Sort
-// HashMap: key id of guard, value vector or array, size 60, count of minute asleep
-//
-// Step 1: Sort the input by date and then by hour / minute
-// Step 2: Run through the sorted input by line
-// Step 3: Parse the log, get timestamp, guard_id, action
-//   If the Line starts with Guard we run a while (not start with Guard) statement
-//      if line starts with falls asleep we track starting minute
-//      if line starts with wakes up we track ending minute
-//      and run the loop to add entries in the hashmap
-//
-// Step 3: Which array has biggest sum of minutes?
-// Step 4: Which array has biggst count of minutes?
-
-use std::{env::current_dir, error::Error, fs};
+use std::{collections::HashMap, error::Error, fs};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let input = fs::read_to_string("input/final.txt")?;
@@ -22,53 +7,78 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     lines.sort_by_key(|line| extract_date(line).expect("Invalid format"));
 
-    part_1(&lines);
+    match part_1(&lines) {
+        Ok(result) => println!("{result}"),
+        Err(err) => println!("{err}"),
+    };
+
     Ok(())
 }
 
-fn part_1(lines: &Vec<&str>) -> Result<i32, &'static str> {
+fn part_1(lines: &Vec<&str>) -> Result<i32, String> {
+    let mut result: HashMap<i32, [i32; 60]> = HashMap::new();
+    let mut sleep_start = 0usize;
+    let mut id = 0;
+
     for line in lines {
-        let mut minutes_asleep = 0;
-        let mut sleep_start = 0;
-        let mut id = String::new();
+        let (minute, action) = parse_line(&line)?;
 
-        // TODO: Improve parsing, split the logic in separate function
-        let (date, info) = line.split_once("] ").ok_or("Error splitting line.")?;
-        let (_, minute) = date.split_once(':').ok_or("Error splitting date line")?;
-        let current_minute = minute
-            .parse::<i32>()
-            .expect("Could not parse string to i32 type");
-
-        // TODO: Match statements
-        if info.starts_with("Guard ") {
-            let (_, id_content) = info.split_once(" #").ok_or("Could not split Guard info")?;
+        if action.starts_with("Guard ") {
+            // TODO: Improve extracting the id with regex.
+            let (_, id_content) = action
+                .split_once(" #")
+                .ok_or("Could not split Guard info")?;
             let (guard_id, _) = id_content.split_once(' ').ok_or("Could not split id")?;
-            id = String::from(guard_id);
-        }
+            // TODO: Avoid expect
+            id = guard_id.parse::<i32>().expect("Could not parse");
+        } else if action.starts_with("falls asleep") {
+            sleep_start = minute;
+        } else if action.starts_with("wakes up") {
+            let minute_sleep_count = result.entry(id).or_insert([0; 60]);
 
-        if info == "falls asleep" {
-            sleep_start = current_minute;
-        }
+            if minute < sleep_start {
+                (sleep_start..60).for_each(|m| {
+                    minute_sleep_count[m] += 1;
+                });
 
-        if info == "wakes up" {
-            if sleep_start > current_minute {
-                let mut minutes_before_full_hour = 0;
-                for _ in sleep_start..=59 {
-                    // Needs to update array values
-                    minutes_before_full_hour += 1;
-                }
-
-                for _ in 0..current_minute {
-                    // Needs to update array values
-                    minutes_before_full_hour += 1;
-                }
+                (0..minute).for_each(|m| {
+                    minute_sleep_count[m] += 1;
+                });
             } else {
-                // Needs to update array values
-                minutes_asleep += current_minute - sleep_start;
+                (sleep_start..minute).for_each(|m| {
+                    minute_sleep_count[m] += 1;
+                })
             }
         }
     }
-    Ok(231)
+
+    let mut biggest_sleeper = 0;
+    let mut sleep_sum = 0;
+
+    for (k, v) in result.iter() {
+        let sum: i32 = v.iter().sum();
+        if sum > sleep_sum {
+            biggest_sleeper = *k;
+            sleep_sum = sum;
+        }
+    }
+
+    let sleeper = match result.get(&biggest_sleeper) {
+        Some(s) => s,
+        None => return Err(String::from("Could not get value out of HashMap")),
+    };
+
+    let max_minute = match sleeper
+        .iter()
+        .enumerate()
+        .max_by_key(|(_, &value)| value)
+        .map(|(idx, _)| idx)
+    {
+        Some(max) => max,
+        None => return Err(String::from("Could get max_minute")),
+    };
+
+    Ok(biggest_sleeper * max_minute as i32)
 }
 
 fn extract_date(line: &str) -> Result<&str, &'static str> {
@@ -76,4 +86,26 @@ fn extract_date(line: &str) -> Result<&str, &'static str> {
         .and_then(|(_, rest)| rest.split_once(']'))
         .map(|(date, _)| date.trim())
         .ok_or("Invalid format: date not found in brackets")
+}
+
+// TODO: Better Error Return
+fn parse_line(line: &str) -> Result<(usize, &str), String> {
+    let minute_hour = line
+        .split_whitespace()
+        .nth(1)
+        .ok_or("Can't split on first whitespace")?;
+    let minute_str = minute_hour
+        .trim_end_matches(']')
+        .split(':')
+        .nth(1)
+        .ok_or("Can't split on colon")?;
+    let minute = minute_str
+        .parse::<usize>()
+        .map_err(|_| "Failed to parse into i32".to_string())?;
+    let action = line
+        .split("] ")
+        .nth(1)
+        .ok_or("Can't split on second whitespace")?;
+
+    Ok((minute, action))
 }

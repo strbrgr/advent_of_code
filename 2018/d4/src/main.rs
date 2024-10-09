@@ -18,6 +18,7 @@ fn main() -> Result<()> {
 
     // Loops over each line and keeps track of a guard sleep in sleep_stats
     for line in &lines {
+        // Action should be action Type, should have id or None
         let (current_minute, action) = parse_line(line)?;
         match action {
             _ if action.starts_with("Guard ") => {
@@ -59,6 +60,10 @@ fn main() -> Result<()> {
         Err(err) => println!("There was an error in Part 1: {}", err),
     };
 
+    match part_2(&sleep_stats) {
+        Ok(result) => println!("Part 2 result: {}", result),
+        Err(err) => println!("There was an error in Part 2: {}", err),
+    };
     Ok(())
 }
 
@@ -87,6 +92,35 @@ fn part_1(frequency: &GuardSleepFrequency) -> Result<usize> {
         .ok_or("Could not get maximum minute asleep")?;
 
     Ok(max_guard_sleeping * max_minute)
+}
+
+// TODO: This is not very idiomatic. Use flatmap over guard and minutes, enumerate over minutes and
+// map them into a tuple of guard, minute, count. Get the max by key of count, and map that into
+// count * minute
+fn part_2(frequency: &GuardSleepFrequency) -> Result<usize> {
+    let mut current_max = usize::MIN;
+    let mut guard = 0usize;
+    let mut max_minute_idx = 0usize;
+
+    for (k, v) in frequency.iter() {
+        let max_idx = v
+            .iter()
+            .enumerate()
+            .max_by_key(|(_, &value)| value)
+            .map(|(idx, _)| idx)
+            .ok_or("Could not get maximum minute asleep")?;
+
+        if let Some(minute_count) = frequency.get(k) {
+            if let Some(minute) = minute_count.get(max_idx) {
+                if *minute > current_max {
+                    current_max = *minute;
+                    guard = *k;
+                    max_minute_idx = max_idx;
+                }
+            }
+        }
+    }
+    Ok(guard * max_minute_idx)
 }
 
 fn extract_date(line: &str) -> Result<&str> {

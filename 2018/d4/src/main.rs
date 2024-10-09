@@ -23,32 +23,39 @@ fn part_1(lines: &Vec<&str>) -> Result<i32, String> {
     for line in lines {
         let (minute, action) = parse_line(&line)?;
 
-        if action.starts_with("Guard ") {
-            // TODO: Improve extracting the id with regex.
-            let (_, id_content) = action
-                .split_once(" #")
-                .ok_or("Could not split Guard info")?;
-            let (guard_id, _) = id_content.split_once(' ').ok_or("Could not split id")?;
-            // TODO: Avoid expect
-            id = guard_id.parse::<i32>().expect("Could not parse");
-        } else if action.starts_with("falls asleep") {
-            sleep_start = minute;
-        } else if action.starts_with("wakes up") {
-            let minute_sleep_count = result.entry(id).or_insert([0; 60]);
-
-            if minute < sleep_start {
-                (sleep_start..60).for_each(|m| {
-                    minute_sleep_count[m] += 1;
-                });
-
-                (0..minute).for_each(|m| {
-                    minute_sleep_count[m] += 1;
-                });
-            } else {
-                (sleep_start..minute).for_each(|m| {
-                    minute_sleep_count[m] += 1;
-                })
+        match action {
+            _ if action.starts_with("Guard ") => {
+                let (_, id_content) = action
+                    .split_once(" #")
+                    .ok_or("Could not split Guard info")?;
+                let (guard_id, _) = id_content.split_once(' ').ok_or("Could not split id")?;
+                // TODO: Avoid expect
+                id = guard_id.parse::<i32>().expect("Could not parse");
             }
+
+            _ if action.starts_with("falls asleep") => {
+                sleep_start = minute;
+            }
+
+            _ if action.starts_with("wakes up") => {
+                let minute_sleep_count = result.entry(id).or_insert([0; 60]);
+
+                if minute < sleep_start {
+                    (sleep_start..60).for_each(|m| {
+                        minute_sleep_count[m] += 1;
+                    });
+
+                    (0..minute).for_each(|m| {
+                        minute_sleep_count[m] += 1;
+                    });
+                } else {
+                    (sleep_start..minute).for_each(|m| {
+                        minute_sleep_count[m] += 1;
+                    })
+                }
+            }
+
+            _ => {}
         }
     }
 

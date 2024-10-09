@@ -3,30 +3,22 @@ use std::result;
 use std::{collections::HashMap, fs};
 
 type Result<T> = result::Result<T, Box<dyn Error>>;
+type GuardSleepFrequency = HashMap<usize, [usize; 60]>;
 
 fn main() -> Result<()> {
     let input = fs::read_to_string("input/final.txt")?;
-
     let mut lines: Vec<&str> = input.lines().collect();
-
+    // TODO: Handle expect
     lines.sort_by_key(|line| extract_date(line).expect("Invalid format"));
 
-    match part_1(&lines) {
-        Ok(result) => println!("Part 1 result: {}", result),
-        Err(err) => println!("There was an error in Part 1: {}", err),
-    };
-
-    Ok(())
-}
-
-fn part_1(lines: &Vec<&str>) -> Result<usize> {
-    let mut result: HashMap<usize, [usize; 60]> = HashMap::new();
+    // Sleep stats keeps track of Guard Id and minutes sleeping and their count
+    let mut sleep_stats: GuardSleepFrequency = HashMap::new();
     let mut sleep_start = 0usize;
     let mut id = 0usize;
 
-    for line in lines {
-        let (minute, action) = parse_line(line)?;
-
+    // Loops over each line and keeps track of a guard sleep in sleep_stats
+    for line in &lines {
+        let (current_minute, action) = parse_line(line)?;
         match action {
             _ if action.starts_with("Guard ") => {
                 let (_, id_content) = action
@@ -37,22 +29,22 @@ fn part_1(lines: &Vec<&str>) -> Result<usize> {
             }
 
             _ if action.starts_with("falls asleep") => {
-                sleep_start = minute;
+                sleep_start = current_minute;
             }
 
             _ if action.starts_with("wakes up") => {
-                let minute_sleep_count = result.entry(id).or_insert([0; 60]);
+                let minute_sleep_count = sleep_stats.entry(id).or_insert([0; 60]);
 
-                if minute < sleep_start {
+                if current_minute < sleep_start {
                     (sleep_start..60).for_each(|m| {
                         minute_sleep_count[m] += 1;
                     });
 
-                    (0..minute).for_each(|m| {
+                    (0..current_minute).for_each(|m| {
                         minute_sleep_count[m] += 1;
                     });
                 } else {
-                    (sleep_start..minute).for_each(|m| {
+                    (sleep_start..current_minute).for_each(|m| {
                         minute_sleep_count[m] += 1;
                     })
                 }
@@ -62,30 +54,39 @@ fn part_1(lines: &Vec<&str>) -> Result<usize> {
         }
     }
 
-    let mut biggest_sleeper = 0usize;
+    match part_1(&sleep_stats) {
+        Ok(result) => println!("Part 1 result: {}", result),
+        Err(err) => println!("There was an error in Part 1: {}", err),
+    };
+
+    Ok(())
+}
+
+fn part_1(frequency: &GuardSleepFrequency) -> Result<usize> {
+    let mut max_guard_sleeping = 0usize;
     let mut sleep_sum = 0usize;
 
-    for (k, v) in result.iter() {
-        let sum: usize = v.iter().sum();
-        if sum > sleep_sum {
-            biggest_sleeper = *k;
-            sleep_sum = sum;
+    for (k, v) in frequency.iter() {
+        let current_sum: usize = v.iter().sum();
+        if current_sum > sleep_sum {
+            max_guard_sleeping = *k;
+            sleep_sum = current_sum;
         }
     }
 
-    let sleeper = match result.get(&biggest_sleeper) {
-        Some(s) => s,
-        None => return Err(From::from("could not find two correct box ids")),
+    let minute_frequency = match frequency.get(&max_guard_sleeping) {
+        Some(freq) => freq,
+        None => return Err(From::from("Could not retrieve frequency for a guard")),
     };
 
-    let max_minute = sleeper
+    let max_minute = minute_frequency
         .iter()
         .enumerate()
         .max_by_key(|(_, &value)| value)
         .map(|(idx, _)| idx)
-        .ok_or("Could not find the maximum entry")?;
+        .ok_or("Could not get maximum minute asleep")?;
 
-    Ok(biggest_sleeper * max_minute)
+    Ok(max_guard_sleeping * max_minute)
 }
 
 fn extract_date(line: &str) -> Result<&str> {

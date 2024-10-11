@@ -17,9 +17,9 @@ fn main() -> Result<()> {
 fn part_1(input: &str) -> Result<()> {
     let mut stack = String::new();
 
-    for i in 0..input.len() {
-        let mut left = i;
-        let mut right = i + 1;
+    let mut left = 0;
+    let mut right = left + 1;
+    while left < input.len() {
         let left_char = input
             .chars()
             .nth(left)
@@ -58,9 +58,9 @@ mod tests {
 
     #[test]
     fn will_units_not_react_test() {
-        assert!(!will_units_react('a', 'C'));
-        assert!(!will_units_react('C', 'a'));
-        assert!(!will_units_react('B', 'd'));
-        assert!(!will_units_react('d', 'B'));
+        assert!(!will_units_react('a', 'a'));
+        assert!(!will_units_react('B', 'B'));
+        assert!(!will_units_react('a', 'B'));
+        assert!(!will_units_react('A', 'b'));
     }
 }

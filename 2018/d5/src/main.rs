@@ -9,6 +9,11 @@ fn main() -> Result<()> {
         Ok(result) => println!("Part 1 result: {}", result),
         Err(err) => return Err(err),
     }
+
+    match part_2(&input) {
+        Ok(result) => println!("Part 2 result: {}", result),
+        Err(err) => return Err(err),
+    }
     Ok(())
 }
 
@@ -29,12 +34,29 @@ fn part_1(input: &str) -> Result<usize> {
     Ok(stack.len())
 }
 
-// Change return type to return Error type not string
-fn get_char(input: &str, position: usize) -> std::result::Result<char, &str> {
-    input
-        .chars()
-        .nth(position)
-        .ok_or("Can't get character at passed index.")
+fn part_2(input: &str) -> Result<i32> {
+    let mut result = i32::MAX;
+
+    for i in 0..26 {
+        let mut stack = String::from("");
+        let lower = (b'a' + i) as char;
+        let upper = (b'A' + i) as char;
+
+        for char in input.chars() {
+            if char != lower && char != upper {
+                stack.push(char);
+            }
+        }
+
+        let length = part_1(&stack)?;
+
+        let length = i32::try_from(length).unwrap();
+        if length < result {
+            result = length;
+        }
+    }
+
+    Ok(result)
 }
 
 fn will_units_react(x: char, y: char) -> bool {

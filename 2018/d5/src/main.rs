@@ -2,41 +2,39 @@ use std::{error, fs};
 
 type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
-// Manipulate the string directly
-// sliding window, whenever there is a match we remove and move both pointers to the left one spot, checj if there is a match we remove.
-// If I can't delete them directly, I can overwrite them with a #
-
 fn main() -> Result<()> {
     let input = fs::read_to_string("input/final.txt")?.trim().to_string();
 
-    part_1(&input)?;
-
+    match part_1(&input) {
+        Ok(result) => println!("Part 1 result: {}", result),
+        Err(err) => return Err(err),
+    }
     Ok(())
 }
 
-fn part_1(input: &str) -> Result<()> {
-    let mut stack = String::new();
+fn part_1(input: &str) -> Result<usize> {
+    let mut stack = String::from("");
 
-    let mut left = 0;
-    let mut right = left + 1;
-    while left < input.len() {
-        let left_char = input
-            .chars()
-            .nth(left)
-            .ok_or("Could not find character at index")?;
-        let right_char = input
-            .chars()
-            .nth(right)
-            .ok_or("Could not find character at index")?;
-
-        if will_units_react(left_char, right_char) {
-            //
+    for char in input.chars() {
+        if let Some(top) = stack.chars().last() {
+            if will_units_react(char, top) {
+                stack.pop();
+            } else {
+                stack.push(char);
+            }
         } else {
-            stack.push(left_char);
-            stack.push(right_char);
+            stack.push(char);
         }
     }
-    Ok(())
+    Ok(stack.len())
+}
+
+// Change return type to return Error type not string
+fn get_char(input: &str, position: usize) -> std::result::Result<char, &str> {
+    input
+        .chars()
+        .nth(position)
+        .ok_or("Can't get character at passed index.")
 }
 
 fn will_units_react(x: char, y: char) -> bool {

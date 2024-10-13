@@ -18,20 +18,8 @@ fn main() -> Result<()> {
 }
 
 fn part_1(input: &str) -> Result<usize> {
-    let mut stack = String::from("");
-
-    for char in input.chars() {
-        if let Some(top) = stack.chars().last() {
-            if will_units_react(char, top) {
-                stack.pop();
-            } else {
-                stack.push(char);
-            }
-        } else {
-            stack.push(char);
-        }
-    }
-    Ok(stack.len())
+    let cleaned_stack_length = react(input);
+    Ok(cleaned_stack_length)
 }
 
 fn part_2(input: &str) -> Result<i32> {
@@ -48,7 +36,7 @@ fn part_2(input: &str) -> Result<i32> {
             }
         }
 
-        let length = part_1(&stack)?;
+        let length = react(&stack);
 
         let length = i32::try_from(length).unwrap();
         if length < result {
@@ -57,6 +45,23 @@ fn part_2(input: &str) -> Result<i32> {
     }
 
     Ok(result)
+}
+
+fn react(input: &str) -> usize {
+    let mut stack = String::from("");
+
+    for char in input.chars() {
+        if let Some(top) = stack.chars().last() {
+            if will_units_react(char, top) {
+                stack.pop();
+            } else {
+                stack.push(char);
+            }
+        } else {
+            stack.push(char);
+        }
+    }
+    stack.len()
 }
 
 fn will_units_react(x: char, y: char) -> bool {

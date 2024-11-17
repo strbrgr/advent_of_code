@@ -8,15 +8,12 @@ use std::{
 type Result<T> = result::Result<T, Box<dyn Error>>;
 type Grid<T> = Vec<Vec<T>>;
 
-// Part 1 should start with the filled out grid and then loop over and do a count
 fn main() -> Result<()> {
     let input = fs::read_to_string("input/final.txt")?;
     let (mut max_x, mut max_y) = (i32::MIN, i32::MIN);
     // Holds vectors of coordinates
     let mut coordinates: Vec<Vec<i32>> = Vec::new();
 
-    // Creat Grid
-    // TODO: Hanlde parsing error better
     for line in input.lines() {
         let coordinate = line
             .split(", ")
@@ -43,6 +40,10 @@ fn main() -> Result<()> {
 
     match part_1(&mut grid, &coordinates) {
         Ok(result) => println!("Part 1 result: {}", result),
+        Err(err) => return Err(err),
+    }
+    match part_2(&mut grid, &coordinates) {
+        Ok(result) => println!("Part 2 result: {}", result),
         Err(err) => return Err(err),
     }
     Ok(())
@@ -110,4 +111,23 @@ fn part_1(grid: &mut Grid<String>, coordinates: &Grid<i32>) -> Result<i32> {
         .ok_or("Could not find an entry")?;
 
     Ok(*largest_value.1)
+}
+
+fn part_2(grid: &mut Grid<String>, coordinates: &Grid<i32>) -> Result<i32> {
+    let mut count = 0;
+    for row in 0..grid.len() {
+        for col in 0..grid[0].len() {
+            let mut distance_total = 0;
+            for (i, el) in coordinates.iter().enumerate() {
+                let manhattan_distance =
+                    (row as i32 - el[1]).abs() + (col as i32 - el[0]).abs();
+                distance_total += manhattan_distance;
+            }
+
+            if distance_total < 10_000 {
+                count += 1;
+            }
+        }
+    }
+    Ok(count)
 }

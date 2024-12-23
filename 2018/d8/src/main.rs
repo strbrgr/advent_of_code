@@ -18,10 +18,13 @@ fn main() -> Result<()> {
 
     let mut starting_index = 0usize;
     let root = parse_tree(&numbers, &mut starting_index);
+    println!("{:#?}", root);
 
     let part_1 = part_1(&root);
     println!("{part_1}");
 
+    let part_2 = part_2(&root);
+    println!("{part_2}");
     Ok(())
 }
 
@@ -66,4 +69,16 @@ fn part_1(root: &Node) -> usize {
     let children_sum: usize = root.children.iter().map(part_1).sum();
 
     metadata_sum + children_sum
+}
+
+fn part_2(root: &Node) -> usize {
+    if root.children.is_empty() {
+        root.metadata.iter().sum::<usize>()
+    } else {
+        root.metadata
+            .iter()
+            .filter_map(|i| root.children.get(i - 1))
+            .map(part_2)
+            .sum()
+    }
 }
